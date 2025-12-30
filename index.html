@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Marking System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 Attendance Marking System</h1>
+            <p class="subtitle">Automated attendance tracking based on call duration</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="students">👥 Students</button>
+            <button class="tab-btn" data-tab="attendance">📊 Mark Attendance</button>
+            <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+        </nav>
+
+        <!-- Students Tab -->
+        <div class="tab-content active" id="students-tab">
+            <div class="card">
+                <h2>Student Management</h2>
+                <p class="info-text">Upload a CSV or Excel file with student names. The file should have a column named
+                    "Name", "Student Name", or "Full Name". Google Meet CSV files are supported.</p>
+
+                <div class="upload-section">
+                    <label for="student-file" class="upload-label">
+                        <div class="upload-icon">📁</div>
+                        <div>Click to upload student list</div>
+                        <div class="file-types">CSV or Excel (.xlsx, .xls)</div>
+                    </label>
+                    <input type="file" id="student-file" accept=".csv,.xlsx,.xls" hidden>
+                </div>
+
+                <div class="manual-add">
+                    <h3>Or Add Students Manually</h3>
+                    <div class="input-group">
+                        <input type="text" id="manual-student-name" placeholder="Enter student name">
+                        <button id="add-student-btn" class="btn btn-primary">Add Student</button>
+                    </div>
+                </div>
+
+                <div class="student-list-section">
+                    <div class="section-header">
+                        <h3>Student List (<span id="student-count">0</span>)</h3>
+                        <button id="clear-students-btn" class="btn btn-danger">Clear All</button>
+                    </div>
+                    <div id="student-list" class="student-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Tab -->
+        <div class="tab-content" id="attendance-tab">
+            <div class="card">
+                <h2>Mark Attendance</h2>
+                <p class="info-text">Upload a CSV or Excel file with attendance data. For Google Meet exports, the
+                    system will automatically detect "Full Name" and "Time in Call" columns.</p>
+
+                <div class="card"
+                    style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--primary); margin-bottom: 20px;">
+                    <h3 style="color: var(--primary); font-size: 0.9rem; margin-bottom: 5px;">📍 Attendance Marking
+                        Rules</h3>
+                    <ul style="font-size: 0.85rem; padding-left: 20px; color: var(--text-secondary);">
+                        <li><b>Who is marked?</b> Only students whose names contain the <b>Batch Name</b> set in
+                            Settings (e.g., "BCR78").</li>
+                        <li><b>How are names matched?</b> We handle spelling variations (e.g., "Mohammed" vs "Muhammed")
+                            and ignore spaces, so "MohammedShanif" matches "Mohammed Shanif".</li>
+                        <li><b>Minimum Time:</b> A student must be in the call for <b>at least 48 minutes</b> to be
+                            marked present.</li>
+                        <li><b>What shows in the report?</b> Clean names only. Batch codes and technical suffixes are
+                            automatically removed.</li>
+                    </ul>
+                </div>
+
+                <div class="settings-grid" style="margin-bottom: 20px;">
+                    <div class="settings-group">
+                        <label for="report-date">Session Date</label>
+                        <input type="date" id="report-date">
+                    </div>
+                </div>
+
+                <div class="settings-group" style="margin-bottom: 20px;">
+                    <label for="session-summary">Today's Session Summary</label>
+                    <textarea id="session-summary" rows="3"
+                        placeholder="Describe what was covered in today's session..."></textarea>
+                </div>
+
+                <div class="settings-group" style="margin-bottom: 20px;">
+                    <label for="tldv-link">TL;DV Link</label>
+                    <input type="text" id="tldv-link" placeholder="https://tldv.io/app/meetings/...">
+                </div>
+
+                <div class="upload-section">
+                    <label for="attendance-file" class="upload-label">
+                        <div class="upload-icon">📄</div>
+                        <div>Click to upload attendance document</div>
+                        <div class="file-types">CSV or Excel (.xlsx, .xls)</div>
+                    </label>
+                    <input type="file" id="attendance-file" accept=".csv,.xlsx,.xls" hidden>
+                </div>
+
+                <div id="processing-status" class="status-message" style="display: none;"></div>
+            </div>
+
+            <div id="attendance-results" class="card" style="display: none;">
+                <div class="section-header">
+                    <h2>Attendance Results</h2>
+                    <div>
+                        <button id="copy-report-btn" class="btn btn-primary" style="margin-right: 10px;">📋 Copy
+                            Report</button>
+                        <button id="export-results-btn" class="btn btn-primary">💾 Export CSV</button>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card present">
+                        <div class="stat-value" id="present-count">0</div>
+                        <div class="stat-label">Present</div>
+                    </div>
+                    <div class="stat-card absent">
+                        <div class="stat-value" id="absent-count">0</div>
+                        <div class="stat-label">Absent</div>
+                    </div>
+                    <div class="stat-card total">
+                        <div class="stat-value" id="total-count">0</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+                <div id="results-table-container"></div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="settings-tab">
+            <div class="card">
+                <h2>Report Information</h2>
+                <p class="info-text">Enter details that will be included in the generated report.</p>
+
+                <div class="settings-grid">
+                    <div class="settings-group">
+                        <label for="batch-name">Batch Name</label>
+                        <input type="text" id="batch-name" placeholder="e.g., BCR78">
+                    </div>
+
+
+
+                    <div class="settings-group">
+                        <label for="trainer-name">Trainer Name</label>
+                        <input type="text" id="trainer-name" placeholder="e.g., Priyanka Sukumaran">
+                    </div>
+
+                    <div class="settings-group">
+                        <label for="coordinator-names">Coordinators</label>
+                        <input type="text" id="coordinator-names" placeholder="e.g., Sreelal pv">
+                    </div>
+
+                    <div class="settings-group">
+                        <label for="report-creator">Report Created By</label>
+                        <input type="text" id="report-creator" placeholder="e.g., Sreelal pv">
+                    </div>
+
+
+                </div>
+
+                <button id="save-report-settings-btn" class="btn btn-success">Save Report Settings</button>
+                <div id="report-settings-status" class="status-message" style="display: none;"></div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+
+</html>
